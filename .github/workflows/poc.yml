@@ -1,0 +1,40 @@
+name: Plane Feature Deployment Injection PoC
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_tag_name:
+        description: "Base Tag Name"
+        required: false
+        default: "preview"
+
+jobs:
+  poc:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Vulnerable pattern copied from feature-deployment.yml
+        id: vulnerable
+        run: |
+          echo "BUILDX_DRIVER=docker-container" >> "$GITHUB_OUTPUT"
+          echo "BUILDX_VERSION=latest" >> "$GITHUB_OUTPUT"
+          echo "BUILDX_PLATFORMS=linux/amd64" >> "$GITHUB_OUTPUT"
+          echo "BUILDX_ENDPOINT=" >> "$GITHUB_OUTPUT"
+
+          if [ "${{ github.event.inputs.base_tag_name }}" != "" ]; then
+            echo "AIO_BASE_TAG=${{ github.event.inputs.base_tag_name }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "AIO_BASE_TAG=develop" >> "$GITHUB_OUTPUT"
+          fi
+
+          echo "Checking for injected command side effect:"
+          if [ -f /tmp/plane_gha_injected.txt ]; then
+            echo "INJECTION_CONFIRMED"
+            cat /tmp/plane_gha_injected.txt
+          else
+            echo "No injection file found"
+          fi
+
+      - name: Show workflow output
+        run: |
+          echo "AIO_BASE_TAG=${{ steps.vulnerable.outputs.AIO_BASE_TAG }}"
